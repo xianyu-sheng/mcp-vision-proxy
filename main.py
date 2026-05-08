@@ -773,18 +773,47 @@ def main():
         http_thread.join()
 
     else:
-        # 模式3: 双线程模式
-        #   - 主线程：GlobalHotKeys 热键监听
-        #   - 后台线程：MCP stdio 服务器
-        # 注意: --mcp 时 stdio 独占 stdin/stdout，故 MCP 不能与其他模式混用
-        print("[*] 双模式运行: 热键监听 + MCP Stdio 服务")
-        print("[*] Claude Code 使用时，配置 mcp_servers 指向本脚本的 --mcp 模式\n")
+        # 模式3: 双进程合一（热键 + MCP 同时运行）
+        # MCP stdio 通过独立线程运行，不占用主线程
+        shutdown_event = threading.Event()
 
-        hotkey_thread = threading.Thread(
-            target=_start_hotkey_listener, daemon=True, name="HotkeyListener"
-        )
-        hotkey_thread.start()
-        hotkey_thread.join()
+        async def _mcp_server_task():
+            """MCP Stdio 服务器异步任务。"""
+            from mcp import stdio_server
+            mcp_server = _build_mcp_server()
+            async with stdio_server() as (read_stream, write_stream):
+                await mcp_server.run(
+                    read_stream,
+                    write_stream,
+                    mcp_server.create_initialization_options(),
+                )
+
+        def _run_mcp_daemon():
+            """在独立线程中运行 MCP 服务器，不干扰热键主线程。"""
+            try:
+                asyncio.run(_mcp_server_task())
+            except KeyboardInterrupt:
+                pass
+            except Exception as e:
+                _log.error("MCP 服务器异常: %s", e)
+            finally:
+                shutdown_event.set()
+
+        print("[*] 双模式运行: 热键监听 + MCP Stdio 服务")
+        print("[*] Ctrl+Alt+V → 捕获剪贴板图片并注入视觉凭证 ID")
+        print("[*] MCP 工具 analyze_local_image 已注册，等待 Claude Code 调用")
+        print("[*] (按 Ctrl+C 退出)\n")
+
+        # 启动 MCP 服务器线程（daemon，确保主进程退出时自动终止）
+        mcp_thread = threading.Thread(target=_run_mcp_daemon, daemon=True, name="MCPServer")
+        mcp_thread.start()
+
+        # 主线程：热键监听（会阻塞到这里，直到收到 Ctrl+C）
+        try:
+            _start_hotkey_listener()
+        finally:
+            shutdown_event.set()
+            _log.info("热键监听已停止，程序退出。")
 
 
 if __name__ == "__main__":
