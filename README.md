@@ -305,15 +305,15 @@ if (args.leaderCommit > commitIndex) {
 
 ### 截图 1: C++ Raft RPC 代码图片
 
-![C++ Raft 代码分析](image/%E6%B5%8B%E8%AF%95/step1_hotkey_injection.png)
+![C++ Raft 代码分析](./assets/demo1.png)
 
 ### 截图 2: 物理实验图表数据
 
-![物理实验图表分析](image/%E6%B5%8B%E8%AF%95/step2_mcp_tool_call.png)
+![物理实验图表分析](./assets/demo2.png)
 
 ### 截图 3: 损坏图片异常处理
 
-![损坏图片异常阻断](image/%E6%B5%8B%E8%AF%95/step3_analysis_result.png)
+![损坏图片异常阻断](./assets/demo3.png)
 
 
 ---
@@ -321,15 +321,15 @@ if (args.leaderCommit > commitIndex) {
 
 ### Screenshot 1: C++ Raft RPC Code Image
 
-![C++ Raft Code Analysis](image/%E6%B5%8B%E8%AF%95/step1_hotkey_injection.png)
+![Hotkey Injection](./assets/demo1.png)
 
 ### Screenshot 2: Physics Experiment Chart
 
-![Physics Experiment Chart Analysis](image/%E6%B5%8B%E8%AF%95/step2_mcp_tool_call.png)
+![DeepSeek Calling MCP Tool](./assets/demo2.png)
 
 ### Screenshot 3: Corrupted Image Error Handling
 
-![Corrupted Image Error Handling](image/%E6%B5%8B%E8%AF%95/step3_analysis_result.png)
+![Analysis Result Returned](./assets/demo3.png)
 
 ---
 
