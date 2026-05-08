@@ -578,21 +578,6 @@ The code directly sets `commitIndex` to `args.leaderCommit` **without taking the
 
 ---
 
-## Test Screenshots
-
-### Screenshot 1: Hotkey Injection of Credential ID
-
-![Hotkey Injection](image/%E6%B5%8B%E8%AF%95/1778241431866.png)
-
-### Screenshot 2: DeepSeek Calling MCP Tool
-
-![MCP Tool Call](image/%E6%B5%8B%E8%AF%95/1778241446417.png)
-
-### Screenshot 3: Analysis Result Returned
-
-![Analysis Result](image/%E6%B5%8B%E8%AF%95/1778241458618.png)
-
----
 
 ## License
 
