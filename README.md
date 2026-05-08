@@ -303,33 +303,33 @@ if (args.leaderCommit > commitIndex) {
 
 以下是完整实测流程截图：
 
-### 截图 1: C++ Raft RPC 代码图片
+### 截图 1: 热键注入凭证码
 
-![C++ Raft 代码分析](./assets/demo1.png)
+![热键注入凭证码](./assets/demo1.png)
 
-### 截图 2: 物理实验图表数据
+### 截图 2: Windows 安全提示对话框
 
-![物理实验图表分析](./assets/demo2.png)
+![Windows 安全提示对话框](./assets/demo2.png)
 
-### 截图 3: 损坏图片异常处理
+### 截图 3: CLI 拦截照片路径
 
-![损坏图片异常阻断](./assets/demo3.png)
+![CLI 拦截照片路径](./assets/demo3.png)
 
 
 ---
 ## Test Screenshots
 
-### Screenshot 1: C++ Raft RPC Code Image
+### Screenshot 1: Hotkey Injection with Credential Code
 
-![Hotkey Injection](./assets/demo1.png)
+![Hotkey Injection with Credential Code](./assets/demo1.png)
 
-### Screenshot 2: Physics Experiment Chart
+### Screenshot 2: Windows Security Prompt Dialog
 
-![DeepSeek Calling MCP Tool](./assets/demo2.png)
+![Windows Security Prompt Dialog](./assets/demo2.png)
 
-### Screenshot 3: Corrupted Image Error Handling
+### Screenshot 3: CLI Intercepting Photo Path
 
-![Analysis Result Returned](./assets/demo3.png)
+![CLI Intercepting Photo Path](./assets/demo3.png)
 
 ---
 
