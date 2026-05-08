@@ -1,0 +1,12 @@
+{
+  "vision_api_key": "your_api_key_here",
+  "vision_base_url": "https://ark.cn-beijing.volces.com/api/v3",
+  "vision_model": "doubao-seed-vision-250328",
+  "vision_timeout": 30,
+  "vision_max_tokens": 4096,
+  "vision_max_retries": 3,
+  "vision_retry_delay": 2,
+  "mcp_port": 18792,
+  "injection_delay_ms": 50,
+  "foreground_restore_delay_ms": 80
+}
