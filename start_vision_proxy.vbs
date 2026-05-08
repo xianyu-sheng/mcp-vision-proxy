@@ -1,0 +1,1 @@
+CreateObject("WScript.Shell").Run "pythonw D:\CLI_paste_photo\main.py", 0, False
