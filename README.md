@@ -305,15 +305,18 @@ if (args.leaderCommit > commitIndex) {
 
 ### 截图 1: 热键注入凭证码
 
-![热键注入凭证码](image/%E6%B5%8B%E8%AF%95/1778241431866.png)
+<img width="1911" height="249" alt="image" src="https://github.com/user-attachments/assets/d8bab3c3-c103-4ef0-b755-7e3ffad7b8bc" />
+
 
 ### 截图 2: DeepSeek 调用 MCP 工具
 
-![DeepSeek 调用 MCP 工具](image/%E6%B5%8B%E8%AF%95/1778241446417.png)
+<img width="1891" height="249" alt="image" src="https://github.com/user-attachments/assets/12b638fa-8d00-4e20-94ad-5a1379bd187a" />
+
 
 ### 截图 3: 返回分析结果
 
-![返回分析结果](image/%E6%B5%8B%E8%AF%95/1778241458618.png)
+<img width="1892" height="446" alt="image" src="https://github.com/user-attachments/assets/08f302a4-3a46-422b-82e6-003d22a7811c" />
+
 
 ---
 
