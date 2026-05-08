@@ -177,9 +177,13 @@ python main.py
 
 此进程监听 `Ctrl+Alt+V`，负责捕获剪贴板图片并注入凭证码。始终保持运行。
 
+> **注意**：此模式不启动 MCP 服务器。MCP 服务由 Claude Code 根据 mcpServers 配置自动拉起（见步骤 3）。
+
 ### 方式二：开机自启动（隐身后台运行）
 
-开机后自动在后台静默启动，无需任何终端窗口，完全"隐形"运行。
+开机后自动在后台静默启动热键监听进程，无需任何终端窗口，完全"隐形"运行。
+
+> **注意**：MCP 服务由 Claude Code 自动管理，不需要手动启动。
 
 **第一步：创建 VBS 启动脚本**
 
@@ -516,9 +520,13 @@ python main.py
 
 This process listens for `Ctrl+Alt+V` and injects credentials. Keep it running.
 
+> **Note**: This mode does NOT start the MCP server. The MCP service is automatically launched by Claude Code based on your mcpServers config (see Step 3).
+
 ### Option 2: Auto-start on Boot (Hidden Background)
 
 Automatically launches silently in the background after system boot. No terminal window, fully invisible.
+
+> **Note**: The MCP service is managed automatically by Claude Code — no manual startup needed.
 
 **Step 1: Create a VBS startup script**
 
