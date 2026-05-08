@@ -69,9 +69,12 @@ config.json
 # Project-specific: runtime cache
 claude_mcp_cache/
 temp/
-*.png
 *.txt
 !config.example.json
+
+# Keep project screenshots — must be BEFORE *.png
+!image/
+!image/**
 
 # Logs
 *.log
@@ -84,3 +87,6 @@ docs/*.jpg
 
 # Ralph loop state
 .claude/ralph-loop-state.json
+
+# Test assets (used locally by e2e tests)
+test_images/

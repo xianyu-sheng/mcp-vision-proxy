@@ -303,20 +303,33 @@ if (args.leaderCommit > commitIndex) {
 
 以下是完整实测流程截图：
 
-### 截图 1: 热键注入凭证码
+### 截图 1: C++ Raft RPC 代码图片
 
-<img width="1911" height="249" alt="image" src="https://github.com/user-attachments/assets/d8bab3c3-c103-4ef0-b755-7e3ffad7b8bc" />
+![C++ Raft 代码分析](image/%E6%B5%8B%E8%AF%95/step1_hotkey_injection.png)
+
+### 截图 2: 物理实验图表数据
+
+![物理实验图表分析](image/%E6%B5%8B%E8%AF%95/step2_mcp_tool_call.png)
+
+### 截图 3: 损坏图片异常处理
+
+![损坏图片异常阻断](image/%E6%B5%8B%E8%AF%95/step3_analysis_result.png)
 
 
-### 截图 2: DeepSeek 调用 MCP 工具
+---
+## Test Screenshots
 
-<img width="1891" height="249" alt="image" src="https://github.com/user-attachments/assets/12b638fa-8d00-4e20-94ad-5a1379bd187a" />
+### Screenshot 1: C++ Raft RPC Code Image
 
+![C++ Raft Code Analysis](image/%E6%B5%8B%E8%AF%95/step1_hotkey_injection.png)
 
-### 截图 3: 返回分析结果
+### Screenshot 2: Physics Experiment Chart
 
-<img width="1892" height="446" alt="image" src="https://github.com/user-attachments/assets/08f302a4-3a46-422b-82e6-003d22a7811c" />
+![Physics Experiment Chart Analysis](image/%E6%B5%8B%E8%AF%95/step2_mcp_tool_call.png)
 
+### Screenshot 3: Corrupted Image Error Handling
+
+![Corrupted Image Error Handling](image/%E6%B5%8B%E8%AF%95/step3_analysis_result.png)
 
 ---
 
