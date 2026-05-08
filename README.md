@@ -21,6 +21,10 @@
 - [安装](#安装)
 - [配置](#配置)
 - [使用](#使用)
+  - [方式一：手动终端启动（开发调试用）](#方式一手动终端启动开发调试用)
+  - [方式二：开机自启动（隐身后台运行）](#方式二开机自启动隐身后台运行)
+  - [步骤 3：在 Claude Code 中注册 MCP 工具](#步骤-3在-claude-code-中注册-mcp-工具)
+  - [步骤 4：使用热键注入](#步骤-4使用热键注入)
 - [工具使用规则](#工具使用规则)
 - [命令行参数](#命令行参数)
 - [端到端实测报告](#端到端实测报告)
@@ -165,7 +169,7 @@ cp config.example.json config.json
 
 ## 使用
 
-### 步骤 1：启动热键监听（终端 1）
+### 方式一：手动终端启动（开发调试用）
 
 ```bash
 python main.py
@@ -173,7 +177,28 @@ python main.py
 
 此进程监听 `Ctrl+Alt+V`，负责捕获剪贴板图片并注入凭证码。始终保持运行。
 
-### 步骤 2：在 Claude Code 中注册 MCP 工具
+### 方式二：开机自启动（隐身后台运行）
+
+开机后自动在后台静默启动，无需任何终端窗口，完全"隐形"运行。
+
+**第一步：创建 VBS 启动脚本**
+
+在项目目录下创建 `start_vision_proxy.vbs`，内容为：
+
+```vbscript
+CreateObject("WScript.Shell").Run "pythonw D:\CLI_paste_photo\main.py", 0, False
+```
+
+> `pythonw` 是 Python 在 Windows 下的无窗口运行模式，`0` 表示隐藏窗口，`False` 表示脚本触发后不等待立即退出。
+
+**第二步：将脚本放入系统启动目录**
+
+1. 按下 `Win + R`，输入 `shell:startup` 并回车
+2. 将 `start_vision_proxy.vbs` 文件（或其快捷方式）拖入打开的"启动"文件夹
+
+以后每次开机，系统会自动在后台启动监听脚本，屏幕上不会有任何窗口。关闭时在任务管理器中结束 `pythonw.exe` 即可。
+
+### 步骤 3：在 Claude Code 中注册 MCP 工具
 
 在 Claude Code 项目中执行（只需执行一次）：
 
@@ -196,7 +221,7 @@ claude mcp add vision-proxy python /path/to/main.py --mcp
 
 > Windows 用户建议使用绝对路径：`d:/CLI_paste_photo/main.py`
 
-### 步骤 3：使用热键注入
+### 步骤 4：使用热键注入
 
 1. 复制任意图片到剪贴板（截图、网页图片、文档图片均可）
 2. 按下 `Ctrl+Alt+V`
@@ -361,6 +386,10 @@ MIT License — 可自由使用、修改和分发。
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+  - [Option 1: Manual Terminal Start (Development)](#option-1-manual-terminal-start-development)
+  - [Option 2: Auto-start on Boot (Hidden Background)](#option-2-auto-start-on-boot-hidden-background)
+  - [Step 3: Register MCP Tool in Claude Code](#step-3-register-mcp-tool-in-claude-code)
+  - [Step 4: Use Hotkey Injection](#step-4-use-hotkey-injection)
 - [Tool Usage Rules](#tool-usage-rules)
 - [Command Line Arguments](#command-line-arguments)
 - [E2E Test Report](#e2e-test-report)
@@ -479,7 +508,7 @@ Edit `config.json` with your vision API credentials:
 
 ## Usage
 
-### Step 1: Start the hotkey listener (Terminal 1)
+### Option 1: Manual Terminal Start (Development)
 
 ```bash
 python main.py
@@ -487,7 +516,28 @@ python main.py
 
 This process listens for `Ctrl+Alt+V` and injects credentials. Keep it running.
 
-### Step 2: Register MCP tool in Claude Code
+### Option 2: Auto-start on Boot (Hidden Background)
+
+Automatically launches silently in the background after system boot. No terminal window, fully invisible.
+
+**Step 1: Create a VBS startup script**
+
+Create `start_vision_proxy.vbs` in the project directory with the following content:
+
+```vbscript
+CreateObject("WScript.Shell").Run "pythonw D:\CLI_paste_photo\main.py", 0, False
+```
+
+> `pythonw` is Python's windowless mode on Windows, `0` hides the window, and `False` means the script exits immediately without waiting.
+
+**Step 2: Place the script in the system Startup folder**
+
+1. Press `Win + R`, type `shell:startup`, and press Enter
+2. Drag `start_vision_proxy.vbs` (or a shortcut to it) into the "Startup" folder that opens
+
+From now on, the listener script will auto-start silently in the background on every boot. To stop it, open Task Manager and end `pythonw.exe`.
+
+### Step 3: Register MCP tool in Claude Code
 
 Run once in your Claude Code project:
 
@@ -508,7 +558,7 @@ Or manually edit `~/.claude/settings.json`:
 }
 ```
 
-### Step 3: Use the hotkey
+### Step 4: Use the hotkey
 
 1. Copy any image to clipboard (screenshot, web image, document image)
 2. Press `Ctrl+Alt+V`
