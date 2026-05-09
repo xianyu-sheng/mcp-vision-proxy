@@ -184,7 +184,7 @@ python main.py
 在项目目录下创建 `start_vision_proxy.vbs`，内容为：
 
 ```vbscript
-CreateObject("WScript.Shell").Run "pythonw D:\CLI_paste_photo\main.py", 0, False
+CreateObject("WScript.Shell").Run "C:\Python314\pythonw.exe D:\CLI_paste_photo\main.py", 0, False
 ```
 
 > `pythonw` 是 Python 在 Windows 下的无窗口运行模式，`0` 表示隐藏窗口，`False` 表示脚本触发后不等待立即退出。
@@ -521,7 +521,7 @@ This process listens for `Ctrl+Alt+V` and injects credentials. Keep it running.
 Create `start_vision_proxy.vbs` in the project directory with the following content:
 
 ```vbscript
-CreateObject("WScript.Shell").Run "pythonw D:\CLI_paste_photo\main.py", 0, False
+CreateObject("WScript.Shell").Run "C:\Python314\pythonw.exe D:\CLI_paste_photo\main.py", 0, False
 ```
 
 > `pythonw` is Python's windowless mode on Windows, `0` hides the window, and `False` means the script exits immediately without waiting.
