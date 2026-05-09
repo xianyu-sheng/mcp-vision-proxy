@@ -1,0 +1,14 @@
+# mcp-vision-proxy dependencies
+# Python >= 3.8 required
+
+# Image capture
+Pillow>=10.0.0
+
+# Global hotkey listener (cross-platform keyboard events)
+pynput>=1.7.6
+
+# HTTP client for vision API calls
+requests>=2.31.0
+
+# MCP (Model Context Protocol) server SDK
+mcp>=1.1.0

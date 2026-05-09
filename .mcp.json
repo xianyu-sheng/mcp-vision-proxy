@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vision-proxy": {
+      "command": "python",
+      "args": ["d:/CLI_paste_photo/main.py", "--mcp"]
+    }
+  }
+}

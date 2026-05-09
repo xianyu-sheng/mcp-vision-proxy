@@ -70,6 +70,7 @@ config.json
 claude_mcp_cache/
 temp/
 *.txt
+!requirements.txt
 !config.example.json
 
 # Keep project screenshots — must be BEFORE *.png
