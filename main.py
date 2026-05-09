@@ -67,6 +67,7 @@ def load_config() -> dict:
         "mcp_port": 18792,
         "injection_delay_ms": 50,
         "foreground_restore_delay_ms": 80,
+        "pythonw_path": "pythonw",
     }
 
     if CONFIG_FILE.exists():
@@ -104,6 +105,7 @@ RETRY_DELAY = int(CONFIG.get("vision_retry_delay", 2))
 MCP_PORT = int(CONFIG.get("mcp_port", 18792))
 INJECTION_DELAY_MS = int(CONFIG.get("injection_delay_ms", 50))
 FOREGROUND_RESTORE_DELAY_MS = int(CONFIG.get("foreground_restore_delay_ms", 80))
+PYTHONW_PATH = CONFIG.get("pythonw_path", "pythonw")
 
 VISION_SYSTEM_PROMPT = (
     "你是一个精准的图片内容转录助手。请将图片中的所有内容转录为结构化的 Markdown 纯文本。\n\n"
@@ -493,7 +495,7 @@ def _build_mcp_server():
     from mcp.server import Server
     from mcp.types import Tool, TextContent
 
-    mcp_server = Server("clipboard-paste-vision")
+    mcp_server = Server("vision-proxy")
 
     @mcp_server.list_tools()
     async def list_tools():
@@ -725,9 +727,36 @@ def _run_http_server():
         _log.error("HTTP 服务启动失败: %s", e)
 
 
+# ── VBS 启动脚本生成 ─────────────────────────────────────────────
+
+def _regen_vbs():
+    """重新生成 VBS 启动脚本（读取 config 中的 pythonw_path）。"""
+    script_path = SCRIPT_DIR / "start_vision_proxy.vbs"
+    vbs_content = (
+        f'CreateObject("WScript.Shell").Run "{PYTHONW_PATH} {SCRIPT_DIR.as_posix()}/main.py", 0, False\n'
+    )
+    try:
+        script_path.write_text(vbs_content, encoding="utf-8")
+        _log.info("已重新生成 VBS 启动脚本: %s", script_path)
+        print(f"已生成: {script_path}")
+        print(f"内容: {vbs_content.strip()}")
+        print()
+        print("提示: 如需开机自启动，请将以下 VBS 文件复制到启动文件夹:")
+        startup_folder = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+        print(f"  启动文件夹: {startup_folder}")
+        print(f"  复制命令: copy \"{script_path}\" \"{startup_folder}\\start_vision_proxy.vbs\"")
+    except Exception as e:
+        _log.error("生成 VBS 失败: %s", e)
+        print(f"生成 VBS 失败: {e}")
+
+
 # ── 主入口 ───────────────────────────────────────────────────────
 
 def main():
+    # ── --regen-vbs: 重新生成 VBS 启动脚本 ──────────────────────
+    if len(sys.argv) > 1 and sys.argv[1] == "--regen-vbs":
+        _regen_vbs()
+        return
     # 基础信息显示
     if VISION_API_KEY:
         masked = (VISION_API_KEY[:6] + "****" + VISION_API_KEY[-4:]

@@ -8,5 +8,6 @@
   "vision_retry_delay": 2,
   "mcp_port": 18792,
   "injection_delay_ms": 50,
-  "foreground_restore_delay_ms": 80
+  "foreground_restore_delay_ms": 80,
+  "pythonw_path": "C:\\Python314\\pythonw.exe"
 }
