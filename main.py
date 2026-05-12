@@ -298,9 +298,11 @@ def _capture_and_inject():
         _set_foreground_window(target_hwnd)
         time.sleep(FOREGROUND_RESTORE_DELAY_MS / 1000.0)
         send_text(inject_text)
-        _log.info("凭证已注入: %s", inject_text)
     except Exception as e:
         _log.error("注入失败: %s", e)
+        return
+
+    _log.info("凭证已注入 [凭证ID: %s]，长度: %d 字符", image_id, len(inject_text))
 
     # 5. 提交后台预分析（纯 fire-and-forget，不等待）
     result_holder: dict = {}
