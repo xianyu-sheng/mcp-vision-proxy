@@ -47,7 +47,7 @@ def load_vision_config() -> dict:
     default = {
         "vision_api_key": "",
         "vision_base_url": "https://ark.cn-beijing.volces.com/api/v3",
-        "vision_model": "doubao-seed-vision-250328",
+        "vision_model": "doubao-seed-1-6-vision-250815",
         "vision_timeout": 30,
         "vision_max_tokens": 4096,
         "vision_max_retries": 3,
@@ -444,7 +444,7 @@ def _vision_api_call(image_path: str, mock_key: str | None = None,
     base_url = mock_url if mock_url is not None else VCFG.get(
         "vision_base_url", "https://ark.cn-beijing.volces.com/api/v3"
     )
-    model = VCFG.get("vision_model", "doubao-seed-vision-250328")
+    model = VCFG.get("vision_model", "doubao-seed-1-6-vision-250815")
     timeout = int(VCFG.get("vision_timeout", 30))
     max_tokens = int(VCFG.get("vision_max_tokens", 4096))
 

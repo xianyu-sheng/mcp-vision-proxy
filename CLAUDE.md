@@ -141,7 +141,7 @@ python main.py --mcp
 {
   "vision_api_key": "your-api-key-here",
   "vision_base_url": "https://ark.cn-beijing.volces.com/api/v3",
-  "vision_model": "doubao-seed-vision-250328",
+  "vision_model": "doubao-seed-1-6-vision-250815",
   "vision_timeout": 30,
   "vision_max_tokens": 4096,
   "vision_max_retries": 3,

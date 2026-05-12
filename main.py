@@ -59,7 +59,7 @@ def load_config() -> dict:
     default = {
         "vision_api_key": "",
         "vision_base_url": "https://ark.cn-beijing.volces.com/api/v3",
-        "vision_model": "doubao-seed-vision-250328",
+        "vision_model": "doubao-seed-1-6-vision-250815",
         "vision_timeout": 30,
         "vision_max_tokens": 4096,
         "vision_max_retries": 3,
@@ -97,7 +97,7 @@ VISION_API_KEY = CONFIG.get("vision_api_key") or os.environ.get("VISION_API_KEY"
 VISION_BASE_URL = CONFIG.get("vision_base_url") or os.environ.get(
     "VISION_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3"
 )
-VISION_MODEL = CONFIG.get("vision_model") or os.environ.get("VISION_MODEL", "doubao-seed-vision-250328")
+VISION_MODEL = CONFIG.get("vision_model") or os.environ.get("VISION_MODEL", "doubao-seed-1-6-vision-250815")
 VISION_TIMEOUT = int(CONFIG.get("vision_timeout", 30))
 VISION_MAX_TOKENS = int(CONFIG.get("vision_max_tokens", 4096))
 MAX_RETRIES = int(CONFIG.get("vision_max_retries", 3))
@@ -430,7 +430,16 @@ def _call_vision_api(image_path: str) -> str:
         raise RuntimeError(f"服务端错误 (HTTP {resp.status_code})。")
 
     resp.raise_for_status()
-    data = resp.json()
+
+    # 豆包 ARK API 返回的 JSON 中文字符使用 GB18030 编码，
+    # 但 HTTP Content-Type header 错误地声明为 charset=utf-8，
+    # 导致 requests.json() 按 UTF-8 解码产生乱码。
+    # 强制使用 GB18030 解码来正确还原中文内容。
+    try:
+        data = resp.json()
+    except Exception:
+        raw_text = resp.content.decode("gb18030", errors="replace")
+        data = json.loads(raw_text)
 
     if "error" in data:
         raise RuntimeError(f"API 返回错误: {data['error']}")
@@ -750,9 +759,154 @@ def _regen_vbs():
         print(f"生成 VBS 失败: {e}")
 
 
+# ── Windows 计划任务管理（开机自启动） ───────────────────────────
+
+def _get_python_executable() -> str:
+    """获取当前 Python 可执行文件路径（兼容虚拟环境）。"""
+    import pathlib
+    exe = pathlib.Path(sys.executable)
+    return str(exe)
+
+
+def _get_main_py_path() -> str:
+    """获取 main.py 的绝对路径（POSIX 风格，Windows 也兼容）。"""
+    return str(SCRIPT_DIR / "main.py").replace("\\", "/")
+
+
+_TASK_NAME = "CtrlAltV_VisionProxy"
+
+
+def _install_autostart() -> bool:
+    """
+    通过 Windows 计划任务注册开机自启动。
+    用户登录时自动在后台静默启动热键服务。
+    """
+    if sys.platform != "win32":
+        print("[错误] 开机自启动功能仅支持 Windows 系统。")
+        return False
+
+    python_exe = _get_python_executable()
+    main_py = _get_main_py_path()
+    task_name = _TASK_NAME
+
+    try:
+        import subprocess
+        # 检查是否已存在
+        check = subprocess.run(
+            ["powershell", "-Command",
+             f"Get-ScheduledTask -TaskName '{task_name}' -ErrorAction SilentlyContinue | "
+             "Select-Object -ExpandProperty TaskName"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if check.stdout.strip():
+            print(f"[提示] 开机自启动已注册（计划任务: {task_name}）")
+            print(f"       如需重新注册，请先运行: python main.py --uninstall")
+            return True
+
+        # 注册新任务
+        action = f'cmd /c "\\"{python_exe}\\" \\"{main_py}\\""'
+        trigger = '<Triggers><LogonTrigger /></Triggers>'
+        settings = (
+            '<Settings>'
+            '<AllowStartOnBatteries>true</AllowStartOnBatteries>'
+            '<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>'
+            '<StartWhenAvailable>true</StartWhenAvailable>'
+            '<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>'
+            '<Hidden>true</Hidden>'
+            '</Settings>'
+        )
+        principal = (
+            '<Principals>'
+            '<Principal id="Author">'
+            '<LogonType>InteractiveToken</LogonType>'
+            '<RunLevel>LeastPrivilege</RunLevel>'
+            '</Principal>'
+            '</Principals>'
+        )
+        xml_body = (
+            '<?xml version="1.0" encoding="UTF-16"?>'
+            f'<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">'
+            f'<RegistrationInfo><Description>Ctrl+Alt+V 图片粘贴助手 - 视觉代理服务</Description></RegistrationInfo>'
+            f'{principal}'
+            f'<Actions Context="Author"><Exec><Command>cmd</Command><Arguments>{action}</Arguments></Exec></Actions>'
+            f'{trigger}'
+            f'{settings}'
+            '</Task>'
+        )
+
+        # 用 schtasks /create 一次性创建（兼容性好，不需要 PowerShell 高版本）
+        cmd = [
+            "schtasks", "/Create",
+            "/TN", task_name,
+            "/XML", "-",  # 从 stdin 读取 XML
+            "/F",          # 强制覆盖
+        ]
+        proc = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            encoding="utf-8", errors="replace",
+        )
+        stdout, stderr = proc.communicate(input=xml_body)
+
+        if proc.returncode == 0:
+            print(f"[OK] 已注册开机自启动（计划任务: {task_name}）")
+            print(f"     每次登录 Windows 后自动在后台启动服务")
+            print(f"     python 路径: {python_exe}")
+            print(f"     脚本路径: {main_py}")
+            return True
+        else:
+            err_msg = (stdout + stderr).strip()
+            print(f"[警告] 计划任务注册失败: {err_msg}")
+            # 回退到 VBS 方式
+            _regen_vbs()
+            return False
+
+    except Exception as e:
+        _log.error("注册开机自启动失败: %s", e)
+        print(f"[错误] 注册失败: {e}")
+        print(f"       备用方案：运行 python main.py --regen-vbs 生成 VBS 脚本，")
+        print(f"       然后手动复制到启动文件夹。")
+        return False
+
+
+def _uninstall_autostart() -> bool:
+    """卸载开机自启动（删除 Windows 计划任务）。"""
+    if sys.platform != "win32":
+        print("[错误] 开机自启动功能仅支持 Windows 系统。")
+        return False
+
+    task_name = _TASK_NAME
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["schtasks", "/Delete", "/TN", task_name, "/F"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if result.returncode == 0:
+            print(f"[OK] 已取消开机自启动（已删除计划任务: {task_name}）")
+            return True
+        else:
+            output = result.stdout + result.stderr
+            if "does not exist" in output.lower() or "找不到" in output:
+                print(f"[提示] 开机自启动未注册，无需取消。")
+                return True
+            print(f"[警告] 取消失败: {output.strip()}")
+            return False
+    except Exception as e:
+        _log.error("取消开机自启动失败: %s", e)
+        print(f"[错误] 取消失败: {e}")
+        return False
+
+
 # ── 主入口 ───────────────────────────────────────────────────────
 
 def main():
+    # ── 自启动管理命令 ────────────────────────────────────────────
+    if len(sys.argv) > 1 and sys.argv[1] == "--install":
+        _install_autostart()
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "--uninstall":
+        _uninstall_autostart()
+        return
     # ── --regen-vbs: 重新生成 VBS 启动脚本 ──────────────────────
     if len(sys.argv) > 1 and sys.argv[1] == "--regen-vbs":
         _regen_vbs()
