@@ -52,11 +52,11 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 | 命令 | 说明 |
 |------|------|
 | `python main.py` | 手动启动热键服务 |
-| `python main.py --install` | 注册开机自启动 |
+| `python main.py --install` | 注册开机自启动（复制到启动文件夹） |
 | `python main.py --uninstall` | 取消开机自启动 |
 | `python main.py --regen-vbs` | 重新生成启动脚本 |
-| `Get-ScheduledTask -TaskName CtrlAltV_VisionProxy` | 查看自启动状态 |
-| `Stop-ScheduledTask -TaskName CtrlAltV_VisionProxy` | 停止后台服务 |
+
+**查看启动文件夹**：文件资源管理器地址栏输入 `shell:startup` 可直接打开。
 
 ---
 

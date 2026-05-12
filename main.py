@@ -770,17 +770,14 @@ def _get_python_executable() -> str:
     return str(exe)
 
 
-def _get_main_py_path() -> str:
-    """获取 main.py 的绝对路径（POSIX 风格，Windows 也兼容）。"""
-    return str(SCRIPT_DIR / "main.py").replace("\\", "/")
-
-
 _TASK_NAME = "CtrlAltV_VisionProxy"
 
 
 def _install_autostart() -> bool:
     """
-    通过 Windows 计划任务注册开机自启动。
+    注册开机自启动。
+    优先方案：复制到用户启动文件夹（无需管理员权限）。
+    备选方案：Windows 计划任务（需要管理员权限）。
     用户登录时自动在后台静默启动热键服务。
     """
     if sys.platform != "win32":
@@ -788,115 +785,150 @@ def _install_autostart() -> bool:
         return False
 
     python_exe = _get_python_executable()
-    main_py = _get_main_py_path()
+    main_py = str(SCRIPT_DIR / "main.py")
     task_name = _TASK_NAME
 
+    # ── 方案A: 启动文件夹（无管理员权限要求，推荐） ──────────────
+    startup_dir = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+    vbs_path = SCRIPT_DIR / "start_vision_proxy.vbs"
+
+    # 生成 VBS 脚本
+    vbs_content = (
+        f'CreateObject("WScript.Shell").Run "'
+        f'\\"{python_exe}\\" \\"{main_py}\\"", 0, False\n'
+    )
     try:
-        import subprocess
-        # 检查是否已存在
-        check = subprocess.run(
-            ["powershell", "-Command",
-             f"Get-ScheduledTask -TaskName '{task_name}' -ErrorAction SilentlyContinue | "
-             "Select-Object -ExpandProperty TaskName"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-        )
-        if check.stdout.strip():
-            print(f"[提示] 开机自启动已注册（计划任务: {task_name}）")
-            print(f"       如需重新注册，请先运行: python main.py --uninstall")
-            return True
-
-        # 注册新任务
-        action = f'cmd /c "\\"{python_exe}\\" \\"{main_py}\\""'
-        trigger = '<Triggers><LogonTrigger /></Triggers>'
-        settings = (
-            '<Settings>'
-            '<AllowStartOnBatteries>true</AllowStartOnBatteries>'
-            '<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>'
-            '<StartWhenAvailable>true</StartWhenAvailable>'
-            '<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>'
-            '<Hidden>true</Hidden>'
-            '</Settings>'
-        )
-        principal = (
-            '<Principals>'
-            '<Principal id="Author">'
-            '<LogonType>InteractiveToken</LogonType>'
-            '<RunLevel>LeastPrivilege</RunLevel>'
-            '</Principal>'
-            '</Principals>'
-        )
-        xml_body = (
-            '<?xml version="1.0" encoding="UTF-16"?>'
-            f'<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">'
-            f'<RegistrationInfo><Description>Ctrl+Alt+V 图片粘贴助手 - 视觉代理服务</Description></RegistrationInfo>'
-            f'{principal}'
-            f'<Actions Context="Author"><Exec><Command>cmd</Command><Arguments>{action}</Arguments></Exec></Actions>'
-            f'{trigger}'
-            f'{settings}'
-            '</Task>'
-        )
-
-        # 用 schtasks /create 一次性创建（兼容性好，不需要 PowerShell 高版本）
-        cmd = [
-            "schtasks", "/Create",
-            "/TN", task_name,
-            "/XML", "-",  # 从 stdin 读取 XML
-            "/F",          # 强制覆盖
-        ]
-        proc = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            encoding="utf-8", errors="replace",
-        )
-        stdout, stderr = proc.communicate(input=xml_body)
-
-        if proc.returncode == 0:
-            print(f"[OK] 已注册开机自启动（计划任务: {task_name}）")
-            print(f"     每次登录 Windows 后自动在后台启动服务")
-            print(f"     python 路径: {python_exe}")
-            print(f"     脚本路径: {main_py}")
-            return True
-        else:
-            err_msg = (stdout + stderr).strip()
-            print(f"[警告] 计划任务注册失败: {err_msg}")
-            # 回退到 VBS 方式
-            _regen_vbs()
-            return False
-
+        vbs_path.write_text(vbs_content, encoding="utf-8")
     except Exception as e:
-        _log.error("注册开机自启动失败: %s", e)
-        print(f"[错误] 注册失败: {e}")
-        print(f"       备用方案：运行 python main.py --regen-vbs 生成 VBS 脚本，")
-        print(f"       然后手动复制到启动文件夹。")
+        _log.error("生成 VBS 失败: %s", e)
+        print(f"[错误] 生成 VBS 失败: {e}")
         return False
+
+    try:
+        startup_vbs = startup_dir / "start_vision_proxy.vbs"
+        import shutil
+        shutil.copy2(vbs_path, startup_vbs)
+        print(f"[OK] 已注册开机自启动（启动文件夹）")
+        print(f"     文件: {startup_vbs}")
+        print(f"     python: {python_exe}")
+        print(f"     脚本: {main_py}")
+        return True
+    except Exception as e:
+        _log.warning("复制到启动文件夹失败: %s", e)
+
+    # ── 方案B: Windows 计划任务（需要管理员权限） ────────────────
+    print(f"[提示] 启动文件夹写入失败，尝试注册计划任务（需要管理员权限）...")
+    try:
+        import subprocess, tempfile
+
+        ps_script = (
+            f"$ErrorActionPreference = 'Stop'\n"
+            f"$action = New-ScheduledTaskAction -Execute '{python_exe.replace(chr(92), '\\\\')}' "
+            f"-Argument '\"{main_py.replace(chr(92), '\\\\')}\"'\n"
+            f"$trigger = New-ScheduledTaskTrigger -AtLogOn\n"
+            f"$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries "
+            f"-DontStopIfGoingOnBatteries -StartWhenAvailable -Hidden\n"
+            f"$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME "
+            f"-LogonType Interactive -RunLevel Limited\n"
+            f"Register-ScheduledTask -TaskName '{task_name}' -Action $action "
+            f"-Trigger $trigger -Settings $settings -Principal $principal "
+            f"-Description 'Ctrl+Alt+V 图片粘贴助手' -Force\n"
+            f"Write-Output 'OK'\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ps1", delete=False, encoding="utf-8-sig"
+        ) as f:
+            f.write(ps_script)
+            temp_path = f.name
+
+        try:
+            result = subprocess.run(
+                ["powershell", "-ExecutionPolicy", "Bypass", "-File", temp_path],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=30,
+            )
+            output = (result.stdout + result.stderr).strip()
+            if "OK" in output or result.returncode == 0:
+                print(f"[OK] 已注册开机自启动（计划任务: {task_name}）")
+                return True
+            else:
+                print(f"[错误] 计划任务注册也失败了: {output}")
+                return False
+        finally:
+            try:
+                os.unlink(temp_path)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[错误] 注册失败: {e}")
+
+    return False
 
 
 def _uninstall_autostart() -> bool:
-    """卸载开机自启动（删除 Windows 计划任务）。"""
+    """卸载开机自启动（删除启动文件夹快捷方式和计划任务）。"""
     if sys.platform != "win32":
         print("[错误] 开机自启动功能仅支持 Windows 系统。")
         return False
 
     task_name = _TASK_NAME
+    removed = False
+
+    # 删除启动文件夹中的 VBS
     try:
-        import subprocess
-        result = subprocess.run(
-            ["schtasks", "/Delete", "/TN", task_name, "/F"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-        )
-        if result.returncode == 0:
-            print(f"[OK] 已取消开机自启动（已删除计划任务: {task_name}）")
-            return True
-        else:
-            output = result.stdout + result.stderr
-            if "does not exist" in output.lower() or "找不到" in output:
-                print(f"[提示] 开机自启动未注册，无需取消。")
-                return True
-            print(f"[警告] 取消失败: {output.strip()}")
-            return False
+        startup_dir = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+        startup_vbs = startup_dir / "start_vision_proxy.vbs"
+        if startup_vbs.exists():
+            startup_vbs.unlink()
+            print(f"[OK] 已删除启动文件夹中的启动脚本")
+            removed = True
     except Exception as e:
-        _log.error("取消开机自启动失败: %s", e)
-        print(f"[错误] 取消失败: {e}")
-        return False
+        print(f"[提示] 删除启动文件夹文件: {e}")
+
+    # 删除计划任务
+    try:
+        import subprocess, tempfile
+
+        ps_script = (
+            f"$ErrorActionPreference = 'SilentlyContinue'\n"
+            f"$task = Get-ScheduledTask -TaskName '{task_name}'\n"
+            f"if ($task) {{\n"
+            f"    Unregister-ScheduledTask -TaskName '{task_name}' -Confirm:$false\n"
+            f"    Write-Output 'DELETED'\n"
+            f"}} else {{\n"
+            f"    Write-Output 'NOT_FOUND'\n"
+            f"}}\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ps1", delete=False, encoding="utf-8-sig"
+        ) as f:
+            f.write(ps_script)
+            temp_path = f.name
+
+        try:
+            result = subprocess.run(
+                ["powershell", "-ExecutionPolicy", "Bypass", "-File", temp_path],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=30,
+            )
+            output = (result.stdout + result.stderr).strip()
+            if "DELETED" in output:
+                print(f"[OK] 已删除计划任务: {task_name}")
+                removed = True
+        finally:
+            try:
+                os.unlink(temp_path)
+            except Exception:
+                pass
+    except Exception as e:
+        pass
+
+    if removed:
+        print(f"[OK] 开机自启动已完全清除")
+    else:
+        print(f"[提示] 未检测到已注册的开机自启动")
+
+    return True
 
 
 # ── 主入口 ───────────────────────────────────────────────────────

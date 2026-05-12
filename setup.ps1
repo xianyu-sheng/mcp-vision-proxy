@@ -167,47 +167,43 @@ Write-Success "已生成: start_vision_proxy.vbs"
 
 # ── 注册开机自启动 ─────────────────────────────────────────────────
 Write-Host ""
-Write-Step "注册开机自启动（Windows 计划任务）..."
+Write-Step "注册开机自启动（复制到用户启动文件夹）..."
 
-$taskName = "CtrlAltV_VisionProxy"
-$taskExists = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+$startupDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+$vbsFile = "start_vision_proxy.vbs"
+$localVbs = Join-Path $SCRIPT_DIR $vbsFile
+$destVbs = Join-Path $startupDir $vbsFile
 
 if ($Uninstall) {
-    if ($taskExists) {
-        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
-        Write-Success "已取消开机自启动"
+    if (Test-Path $destVbs) {
+        Remove-Item $destVbs -Force
+        Write-Success "已取消开机自启动（已删除启动文件夹中的 $vbsFile）"
     } else {
         Write-Info "开机自启动未注册，无需取消"
     }
 } else {
-    if ($taskExists) {
-        Write-Info "开机自启动已注册（计划任务: $taskName）"
+    if (Test-Path $destVbs) {
+        Write-Info "开机自启动已注册: $destVbs"
         if (-not $Force) {
             $answer = Read-Host "是否重新注册？(y/N)"
             if ($answer -ne "y" -and $answer -ne "Y") {
                 Write-Info "跳过"
             } else {
-                Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
-                $taskExists = $null
+                Remove-Item $destVbs -Force
             }
         } else {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
-            $taskExists = $null
+            Remove-Item $destVbs -Force
         }
     }
 
-    if (-not $taskExists) {
-        $action = New-ScheduledTaskAction -Execute "cmd" -Argument "/c `"$pythonwPath `"`"$mainPyPosix`"`"`""
-        $trigger = New-ScheduledTaskTrigger -AtLogOn
-        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+    if (-not (Test-Path $destVbs)) {
         try {
-            Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Description "Ctrl+Alt+V 图片粘贴助手 - 视觉代理服务" -Force | Out-Null
-            Write-Success "已注册开机自启动（计划任务: $taskName）"
-            Write-Info "每次登录系统后自动在后台运行"
+            Copy-Item $localVbs $destVbs -Force
+            Write-Success "已注册开机自启动"
+            Write-Info "  启动文件: $destVbs"
         } catch {
-            Write-Warn "计划任务注册失败: $_"
-            Write-Info "备用方案：将 start_vision_proxy.vbs 复制到启动文件夹"
-            Write-Info "  启动文件夹: $env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+            Write-Warn "复制到启动文件夹失败: $_"
+            Write-Info "请手动复制 $localVbs 到 $startupDir"
         }
     }
 }
@@ -224,10 +220,9 @@ Write-Info "  2. 复制任意图片，按 Ctrl+Alt+V"
 Write-Info "  3. AI 自动识别图片内容并返回文字描述"
 Write-Host ""
 Write-Info "手动控制："
-Write-Info "  查看状态: Get-ScheduledTask -TaskName $taskName | fl"
 Write-Info "  启动服务: python main.py"
-Write-Info "  停止服务: Stop-ScheduledTask -TaskName $taskName"
 Write-Info "  卸载自启: .\setup.ps1 -Uninstall"
+Write-Info "  启动文件夹: shell:startup"
 Write-Host ""
 Write-Host "提示：首次使用前请确认 config.json 中已填入有效的 API Key" -ForegroundColor Yellow
 Write-Host ""
