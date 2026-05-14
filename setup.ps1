@@ -159,8 +159,8 @@ if (-not (Test-Path $mcpFile)) {
 
 # ── 生成 VBS 启动脚本 ───────────────────────────────────────────────
 Write-Step "生成启动脚本..."
-$mainPyPosix = (Resolve-Path (Join-Path $SCRIPT_DIR "main.py")).Path -replace '\\', '/'
-$vbsContent = "CreateObject(`"WScript.Shell`").Run `"$pythonwPath `"`"$mainPyPosix`"`"`", 0, False"
+$mainPyPath = (Resolve-Path (Join-Path $SCRIPT_DIR "main.py")).Path
+$vbsContent = "CreateObject(`"WScript.Shell`").Run `"$pythonwPath $mainPyPath`", 0, False"
 $vbsPath = Join-Path $SCRIPT_DIR "start_vision_proxy.vbs"
 $vbsContent | Set-Content $vbsPath -Encoding UTF8
 Write-Success "已生成: start_vision_proxy.vbs"

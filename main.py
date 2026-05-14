@@ -792,10 +792,10 @@ def _install_autostart() -> bool:
     startup_dir = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
     vbs_path = SCRIPT_DIR / "start_vision_proxy.vbs"
 
-    # 生成 VBS 脚本
+    # 生成 VBS 脚本（直接拼接命令，无需引号转义）
     vbs_content = (
-        f'CreateObject("WScript.Shell").Run "'
-        f'\\"{python_exe}\\" \\"{main_py}\\"", 0, False\n'
+        f'CreateObject("WScript.Shell").Run '
+        f'"{python_exe} {main_py}", 0, False\n'
     )
     try:
         vbs_path.write_text(vbs_content, encoding="utf-8")
